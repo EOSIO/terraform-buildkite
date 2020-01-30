@@ -16,7 +16,7 @@ go get github.com/mitchellh/gox
 # there are deb packages for those.
 
 # Build the provider
-gox -arch="$GOX_ARCH" -os="$GOX_OS" -output="$GOX_MAIN_TEMPLATE" github.com/yougroupteam/terraform-buildkite
+gox -arch="$GOX_ARCH" -os="$GOX_OS" -output="$GOX_MAIN_TEMPLATE" github.com/$(git remote show origin -n | grep h.URL | sed 's/.*://;s/\/.*//;s/.git$//')/terraform-buildkite
 
 # ZZZZZZZZZZZZZZZZZZZZIPPIT
 echo "--- Build done"
