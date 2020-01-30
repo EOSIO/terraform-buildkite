@@ -258,7 +258,7 @@ func resourcePipeline() *schema.Resource {
 
 type Pipeline struct {
 	Id                  string                 `json:"id,omitempty"`
-	Environment         map[string]string      `json:"env,omitempty"`
+	Environment         map[string]interface      `json:"env,omitempty"`
 	Slug                string                 `json:"slug,omitempty"`
 	WebURL              string                 `json:"web_url,omitempty"`
 	BuildsURL           string                 `json:"builds_url,omitempty"`
