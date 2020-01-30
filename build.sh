@@ -2,7 +2,7 @@
 set -ex
 IFS=$' \n\t'
 
-export PROVIDER_VERSION="0.0.4"
+export PROVIDER_VERSION="0.0.5"
 export DISTDIR="$PWD/dist"
 export WORKDIR="$PWD"
 
