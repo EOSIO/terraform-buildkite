@@ -66,11 +66,8 @@ func resourcePipeline() *schema.Resource {
 				Default:  "master",
 			},
 			"env": &schema.Schema{
-				Type:     schema.TypeMap,
+				Type:     schema.TypeString,
 				Optional: true,
-				Elem: &schema.Schema{
-					Type: schema.TypeString,
-				},
 			},
 			"webhook_url": &schema.Schema{
 				Type:     schema.TypeString,
@@ -258,7 +255,7 @@ func resourcePipeline() *schema.Resource {
 
 type Pipeline struct {
 	Id                  string                 `json:"id,omitempty"`
-	Environment         map[string]interface      `json:"env,omitempty"`
+	Environment         string				   `json:"env,omitempty"`
 	Slug                string                 `json:"slug,omitempty"`
 	WebURL              string                 `json:"web_url,omitempty"`
 	BuildsURL           string                 `json:"builds_url,omitempty"`
@@ -316,7 +313,7 @@ type Step struct {
 	Type                string            `json:"type"`
 	Name                string            `json:"name,omitempty"`
 	Command             string            `json:"command,omitempty"`
-	Environment         map[string]string `json:"env,omitempty"`
+	Environment         string 			  `json:"env,omitempty"`
 	TimeoutInMinutes    int               `json:"timeout_in_minutes,omitempty"`
 	AgentQueryRules     []string          `json:"agent_query_rules,omitempty"`
 	BranchConfiguration string            `json:"branch_configuration,omitempty"`
@@ -465,10 +462,7 @@ func preparePipelineRequestPayload(d *schema.ResourceData) *Pipeline {
 	req.Slug = d.Get("slug").(string)
 	req.Repository = d.Get("repository").(string)
 	req.BranchConfiguration = d.Get("branch_configuration").(string)
-	req.Environment = map[string]string{}
-	for k, vI := range d.Get("env").(map[string]interface{}) {
-		req.Environment[k] = vI.(string)
-	}
+	req.Environment = d.Get("env").(string)
 
 	stepsI := d.Get("step").([]interface{})
 	req.Steps = make([]Step, len(stepsI))
@@ -479,17 +473,13 @@ func preparePipelineRequestPayload(d *schema.ResourceData) *Pipeline {
 			Type:                stepM["type"].(string),
 			Name:                stepM["name"].(string),
 			Command:             stepM["command"].(string),
-			Environment:         map[string]string{},
+			Environment:         stepM["env"].(string),
 			AgentQueryRules:     make([]string, len(stepM["agent_query_rules"].([]interface{}))),
 			BranchConfiguration: stepM["branch_configuration"].(string),
 			ArtifactPaths:       stepM["artifact_paths"].(string),
 			Concurrency:         stepM["concurrency"].(int),
 			Parallelism:         stepM["parallelism"].(int),
 			TimeoutInMinutes:    stepM["timeout_in_minutes"].(int),
-		}
-
-		for k, vI := range stepM["env"].(map[string]interface{}) {
-			req.Steps[i].Environment[k] = vI.(string)
 		}
 
 		for j, vI := range stepM["agent_query_rules"].([]interface{}) {
