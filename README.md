@@ -35,6 +35,14 @@ provider "buildkite" {
   organization = "YOUR_ORG_SLUG"
 }
 
+env = {
+  "COMMANDS" = <<EOF
+    echo "starting build"
+    git clone $BUILDKITE_REPO
+    cd ..
+  EOF
+}
+
 resource "buildkite_pipeline" "terraform_test" {
   name       = "terraform-test"
   repository = "git@github.com:you/repo.git"
@@ -43,7 +51,10 @@ resource "buildkite_pipeline" "terraform_test" {
     {
       type    = "script"
       name    = ":llama: Tests"
-      command = "echo Hello world!"
+      command = <<CMD
+        $COMMANDS
+        echo "complete"
+      CMD
     },
   ]
 }
