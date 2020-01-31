@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-
+	"strconv"
 	"github.com/hashicorp/terraform/helper/schema"
 )
 
@@ -467,7 +467,7 @@ func preparePipelineRequestPayload(d *schema.ResourceData) *Pipeline {
 	req.BranchConfiguration = d.Get("branch_configuration").(string)
 	req.Environment = map[string]string{}
 	for k, vI := range d.Get("env").(map[string]interface{}) {
-		req.Environment[k] = vI.(string)
+		req.Environment[k] = strconv.Quote(vI.(string))
 	}
 
 	stepsI := d.Get("step").([]interface{})
@@ -489,7 +489,7 @@ func preparePipelineRequestPayload(d *schema.ResourceData) *Pipeline {
 		}
 
 		for k, vI := range stepM["env"].(map[string]interface{}) {
-			req.Steps[i].Environment[k] = vI.(string)
+			req.Steps[i].Environment[k] = strconv.Quote(vI.(string))
 		}
 
 		for j, vI := range stepM["agent_query_rules"].([]interface{}) {
