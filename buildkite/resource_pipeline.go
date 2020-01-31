@@ -91,11 +91,8 @@ func resourcePipeline() *schema.Resource {
 							Optional: true,
 						},
 						"env": &schema.Schema{
-							Type:     schema.TypeMap,
+							Type:     schema.TypeString,
 							Optional: true,
-							Elem: &schema.Schema{
-								Type: schema.TypeString,
-							},
 						},
 						"timeout_in_minutes": &schema.Schema{
 							Type:     schema.TypeInt,
