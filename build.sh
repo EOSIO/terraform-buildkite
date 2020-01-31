@@ -2,11 +2,13 @@
 set -ex
 IFS=$' \n\t'
 
+rm -rf dist
+
 export PROVIDER_VERSION="0.0.5"
 export DISTDIR="$PWD/dist"
 export WORKDIR="$PWD"
 
-export GOX_MAIN_TEMPLATE="$DISTDIR/{{.OS}}/{{.Dir}}_v${PROVIDER_VERSION}"
+export GOX_MAIN_TEMPLATE="$DISTDIR/{{.OS}}/terraform-provider-buildkite_v${PROVIDER_VERSION}"
 export GOX_ARCH="amd64"
 export GOX_OS=${*:-"linux darwin"}
 
