@@ -194,7 +194,7 @@ func resourcePipeline() *schema.Resource {
 						"build_pull_requests": &schema.Schema{
 							Type:     schema.TypeBool,
 							Optional: true,
-							Default:  true,
+							Default:  false,
 						},
 						"pull_request_branch_filter_enabled": &schema.Schema{
 							Type:     schema.TypeBool,
@@ -217,6 +217,7 @@ func resourcePipeline() *schema.Resource {
 						"build_pull_request_forks": &schema.Schema{
 							Type:     schema.TypeBool,
 							Optional: true,
+							Default:  false,
 						},
 						"filter_enabled": &schema.Schema{
 							Type:     schema.TypeBool,

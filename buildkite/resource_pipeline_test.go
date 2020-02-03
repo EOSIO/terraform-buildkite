@@ -346,15 +346,16 @@ resource "buildkite_pipeline" "test_foo" {
   name = "tf-acc-foo"
   repository = "git@github.com:yougroupteam/terraform-provider-buildkite.git"
 
+  github_settings {
+	trigger_mode = "deployment"
+  }
+
   step {
     type = "script"
     name = "test"
     command = "echo 'Hello World'"
   }
 
-  github_settings {
-	trigger_mode = "deployment"
-  }
 }
 `
 
