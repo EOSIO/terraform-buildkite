@@ -250,6 +250,10 @@ func resourcePipeline() *schema.Resource {
 							Type:     schema.TypeBool,
 							Optional: true,
 						},
+						"commit_status_error": &schema.Schema{
+							Type:     schema.TypeString,
+							Optional: true,
+						},
 					},
 				},
 			},
