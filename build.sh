@@ -4,7 +4,7 @@ IFS=$' \n\t'
 
 rm -rf dist
 
-export PROVIDER_VERSION="0.0.5"
+export PROVIDER_VERSION="0.0.6"
 export DISTDIR="$PWD/dist"
 export WORKDIR="$PWD"
 

@@ -348,6 +348,7 @@ resource "buildkite_pipeline" "test_foo" {
 
   github_settings {
 	trigger_mode = "deployment"
+	build_pull_requests = true
   }
 
   step {
@@ -371,6 +372,8 @@ resource "buildkite_pipeline" "test_foo" {
   }
 
   github_settings {
+	  trigger_mode = "none"
+	  build_pull_requests = true
 	  build_tags = true
   }
 }
