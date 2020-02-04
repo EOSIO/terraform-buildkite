@@ -129,18 +129,46 @@ func TestAccPipeline_basic_gitlab(t *testing.T) {
 	})
 }
 
-func TestAccPipeline_githubSettingsTriggerModeDeployment(t *testing.T) {
+func TestAccPipeline_githubSettingsTriggerModeDeploymentChangeDefault(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckBuildkitePipelineDestroy,
 		Steps: []resource.TestStep{
 			resource.TestStep{
-				Config: testAccPipeline_githubSettingsTriggerModeDeployment,
+				Config: testAccPipeline_githubSettingsTriggerModeDeploymentChangeDefault,
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("buildkite_pipeline.test_foo", "github_settings.#", "1"),
 					resource.TestCheckResourceAttr("buildkite_pipeline.test_foo", "github_settings.0.build_pull_request_forks", "false"),
-					resource.TestCheckResourceAttr("buildkite_pipeline.test_foo", "github_settings.0.build_pull_requests", "true"),
+					resource.TestCheckResourceAttr("buildkite_pipeline.test_foo", "github_settings.0.build_pull_requests", "false"),
+					resource.TestCheckResourceAttr("buildkite_pipeline.test_foo", "github_settings.0.build_tags", "false"),
+					resource.TestCheckResourceAttr("buildkite_pipeline.test_foo", "github_settings.0.prefix_pull_request_fork_branch_names", "true"),
+					resource.TestCheckResourceAttr("buildkite_pipeline.test_foo", "github_settings.0.publish_blocked_as_pending", "false"),
+					resource.TestCheckResourceAttr("buildkite_pipeline.test_foo", "github_settings.0.publish_commit_status", "true"),
+					resource.TestCheckResourceAttr("buildkite_pipeline.test_foo", "github_settings.0.publish_commit_status_per_step", "false"),
+					resource.TestCheckResourceAttr("buildkite_pipeline.test_foo", "github_settings.0.pull_request_branch_filter_configuration", ""),
+					resource.TestCheckResourceAttr("buildkite_pipeline.test_foo", "github_settings.0.pull_request_branch_filter_enabled", "false"),
+					resource.TestCheckResourceAttr("buildkite_pipeline.test_foo", "github_settings.0.skip_pull_request_builds_for_existing_commits", "true"),
+					resource.TestCheckResourceAttr("buildkite_pipeline.test_foo", "github_settings.0.trigger_mode", "deployment"),
+					resource.TestCheckResourceAttr("buildkite_pipeline.test_foo", "bitbucket_settings.#", "0"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccPipeline_githubSettingsTriggerModeDeploymentNoChangeDefault(t *testing.T) { // Buildkite defaults build_pull_requests to true (and don't tell us), so we need to ensure that it's false even if you don't explicitly set it to false
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckBuildkitePipelineDestroy,
+		Steps: []resource.TestStep{
+			resource.TestStep{
+				Config: testAccPipeline_githubSettingsTriggerModeDeploymentNoChangeDefault,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("buildkite_pipeline.test_foo", "github_settings.#", "1"),
+					resource.TestCheckResourceAttr("buildkite_pipeline.test_foo", "github_settings.0.build_pull_request_forks", "false"),
+					resource.TestCheckResourceAttr("buildkite_pipeline.test_foo", "github_settings.0.build_pull_requests", "false"),
 					resource.TestCheckResourceAttr("buildkite_pipeline.test_foo", "github_settings.0.build_tags", "false"),
 					resource.TestCheckResourceAttr("buildkite_pipeline.test_foo", "github_settings.0.prefix_pull_request_fork_branch_names", "true"),
 					resource.TestCheckResourceAttr("buildkite_pipeline.test_foo", "github_settings.0.publish_blocked_as_pending", "false"),
@@ -306,7 +334,7 @@ resource "buildkite_pipeline" "test_beanstalk" {
 const testAccPipeline_basicGithub = `
 resource "buildkite_pipeline" "test_github" {
   name = "tf-acc-basic-github"
-  repository = "git@github.com:yougroupteam/terraform-provider-buildkite.git"
+  repository = "git@github.com:EOSIO/terraform-provider-buildkite.git"
 
   step {
     type = "script"
@@ -342,14 +370,32 @@ resource "buildkite_pipeline" "test_gitlab" {
 }
 `
 
-const testAccPipeline_githubSettingsTriggerModeDeployment = `
+const testAccPipeline_githubSettingsTriggerModeDeploymentNoChangeDefault = `
 resource "buildkite_pipeline" "test_foo" {
   name = "tf-acc-foo"
-  repository = "git@github.com:yougroupteam/terraform-provider-buildkite.git"
+  repository = "git@github.com:EOSIO/terraform-provider-buildkite.git"
 
   github_settings {
 	trigger_mode = "deployment"
-	build_pull_requests = true
+  }
+
+  step {
+    type = "script"
+    name = "test"
+    command = "echo 'Hello World'"
+  }
+
+}
+`
+
+const testAccPipeline_githubSettingsTriggerModeDeploymentChangeDefault = `
+resource "buildkite_pipeline" "test_foo" {
+  name = "tf-acc-foo"
+  repository = "git@github.com:EOSIO/terraform-provider-buildkite.git"
+
+  github_settings {
+	trigger_mode = "deployment"
+	build_pull_requests = false
   }
 
   step {
@@ -364,7 +410,7 @@ resource "buildkite_pipeline" "test_foo" {
 const testAccPipeline_githubSettingsBuildTags = `
 resource "buildkite_pipeline" "test_foo" {
   name = "tf-acc-foo"
-  repository = "git@github.com:yougroupteam/terraform-provider-buildkite.git"
+  repository = "git@github.com:EOSIO/terraform-provider-buildkite.git"
 
   step {
     type = "script"
@@ -374,7 +420,6 @@ resource "buildkite_pipeline" "test_foo" {
 
   github_settings {
 	  trigger_mode = "none"
-	  build_pull_requests = true
 	  build_tags = true
   }
 }

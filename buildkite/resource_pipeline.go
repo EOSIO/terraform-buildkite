@@ -193,8 +193,8 @@ func resourcePipeline() *schema.Resource {
 						},
 						"build_pull_requests": &schema.Schema{
 							Type:     schema.TypeBool,
-							Optional: true,
 							Default:  false,
+							Optional: true,
 						},
 						"pull_request_branch_filter_enabled": &schema.Schema{
 							Type:     schema.TypeBool,
@@ -502,7 +502,6 @@ func preparePipelineRequestPayload(d *schema.ResourceData) *Pipeline {
 		}
 	}
 
-	if d.HasChange("github_settings") || d.HasChange("bitbucket_settings") {
 		log.Printf("[INFO] buildkite: RepositoryProviderSettings have changed")
 
 		githubSettings := d.Get("github_settings").([]interface{})
@@ -513,6 +512,15 @@ func preparePipelineRequestPayload(d *schema.ResourceData) *Pipeline {
 			s := githubSettings[0].(map[string]interface{})
 
 			for k, vI := range s {
+				// Disable everything unless user specifies options (build_pull_requests is always true by default)
+				switch v := vI.(type) {
+				case bool:
+					settings[k] = false
+				case string:
+					settings[k] = ""
+				default:
+					fmt.Printf("Unable to determine the type of %+v's value: %+v! Ensure that the values you're passing in are acceptable by reviewing https://buildkite.com/docs/apis/rest-api/pipelines", fmt.Sprintf("github_settings.0.%s", k), v)
+				}
 				if d.HasChange(fmt.Sprintf("github_settings.0.%s", k)) {
 					settings[k] = vI
 				}
@@ -527,7 +535,6 @@ func preparePipelineRequestPayload(d *schema.ResourceData) *Pipeline {
 			}
 		}
 		req.ProviderSettings = settings
-	}
 
 	return req
 }
