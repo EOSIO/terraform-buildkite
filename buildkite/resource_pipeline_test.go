@@ -69,6 +69,7 @@ func TestAccPipeline_basic_github(t *testing.T) {
 					resource.TestCheckResourceAttr("buildkite_pipeline.test_github", "github_settings.0.prefix_pull_request_fork_branch_names", "true"),
 					resource.TestCheckResourceAttr("buildkite_pipeline.test_github", "github_settings.0.publish_blocked_as_pending", "false"),
 					resource.TestCheckResourceAttr("buildkite_pipeline.test_github", "github_settings.0.publish_commit_status", "true"),
+					resource.TestCheckResourceAttr("buildkite_pipeline.test_github", "github_settings.0.commit_status_error", ""),
 					resource.TestCheckResourceAttr("buildkite_pipeline.test_github", "github_settings.0.publish_commit_status_per_step", "false"),
 					resource.TestCheckResourceAttr("buildkite_pipeline.test_github", "github_settings.0.pull_request_branch_filter_configuration", ""),
 					resource.TestCheckResourceAttr("buildkite_pipeline.test_github", "github_settings.0.pull_request_branch_filter_enabled", "false"),
