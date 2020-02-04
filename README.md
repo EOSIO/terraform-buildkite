@@ -1,82 +1,69 @@
 # Terraform provider for [buildkite](https://www.buildkite.com)
 
-This allows you to manage buildkite pipelines with Terraform.
-
-## Installation
-
-Run
-```bash
-go get github.com/$(git remote show origin -n | grep h.URL | sed 's/.*://;s/\/.*//;s/.git$//')/terraform-buildkite
-go install github.com/$(git remote show origin -n | grep h.URL | sed 's/.*://;s/\/.*//;s/.git$//')/terraform-buildkite
-```
-Which gives you a `terraform-provider-buildkite` in `$GOPATH/bin`.
-
-[Add the provider to the plugin search path](https://www.terraform.io/docs/configuration/providers.html#third-party-plugins) in your home directory (or, in CI, the home directory of whatever user runs terraform). You'll need to make sure the program conforms to the plugin naming convention noted in the Terraform documentation linked above. (eg: terraform-provider-buildkite_vX.Y.Z)
+Manage buildkite pipelines with Terraform!
 
 ## Usage
 
 ```terraform
-provider "buildkite" {
-  # Get an API token from https://buildkite.com/user/api-access-tokens
-  # Needs: read_pipelines, write_pipelines
-  # Instead of embedding the API token in the .tf file,
-  # it can also be passed via env variable BUILDKITE_API_TOKEN
-  api_token    = "YOUR_API_TOKEN"
-  # This is the part behind https://buildkite.com/, e.g. https://buildkite.com/some-org
-  # Instead of embedding the org slug in the .tf file,
-  # it can also be passed via env variable BUILDKITE_ORGANIZATION
-  organization = "YOUR_ORG_SLUG"
-}
+resource "buildkite_pipeline" "eosio" {
+  name                 = "EOSIO"
+  repository           = "git@github.com:EOSIO/eos.git"
+  slug                 = "eosio"
+  branch_configuration = "master release/* develop v*.*.*"
+  default_branch       = "develop"
+  description          = ":muscle: The Most Powerful Infrastructure for Decentralized Applications"
+  
+  github_settings {
+    trigger_mode = "code"
+  }
 
-env = {
-  "COMMANDS" = <<EOF
-    echo "starting build"
-    git clone $BUILDKITE_REPO
-    cd ..
-  EOF
-}
-
-resource "buildkite_pipeline" "terraform_test" {
-  name       = "terraform-test"
-  repository = "git@github.com:you/repo.git"
+  env                  =  {
+    "BUILDKITE_CLEAN_CHECKOUT" = true
+    "SKIP_CONTRACT_BUILDER" = true
+    "PREP_COMMANDS" = <<EOF
+git clone -v -- \$BUILDKITE_REPO .;
+[[ \$BUILDKITE_BRANCH =~ ^pull/[0-9]+/head: ]] && git fetch -v --prune origin refs/pull/$(echo \$BUILDKITE_BRANCH | cut -d/ -f2)/head || git checkout \$BUILDKITE_BRANCH;
+git checkout \$BUILDKITE_COMMIT;
+git clean -ffxdq;
+./.cicd/prep-submodules.sh;
+    EOF
+  }
 
   step = [
     {
       type    = "script"
-      name    = ":llama: Tests"
+      name    = ":pipeline: Pipeline Upload"
       command = <<CMD
-        $COMMANDS
-        echo "complete"
+        $$PREP_COMMANDS
+        ./.cicd/generate-pipeline.sh > pipeline.yml && buildkite-agent artifact upload pipeline.yml && buildkite-agent pipeline upload pipeline.yml
       CMD
+      agent_query_rules = [
+        "queue=automation-basic-builder-fleet"
+      ]
     },
   ]
 }
 ```
 
-## Importing existing pipelines
+- IF you don't set github_settings or bitbucket_settings, buildkite will set true for some of the options. See the tests for an example.
+- All github_settings and bitbucket properties not defined will default to false or an empty string.
 
-You can import existing pipeline definitions by their slug:
+## Building the plugin
 
-```bash
-terraform import buildkite_pipeline.my_name my-pipeline-slug
 ```
+./build.sh
+```
+- Take the ./dist/terraform-provider-buildkite-*.zip file and make sure it's on the docker tag you're using:
+  ```
+  RUN mkdir -p "/root/.terraform.d/plugins/"
+  COPY ./packages/terraform-provider-buildkite-v0.0.6-linux-amd64.zip /root/terraform-provider-buildkite-v0.0.6-linux-amd64.zip
+  RUN unzip /root/terraform-provider-buildkite-v0.0.6-linux-amd64.zip -d "/root/.terraform.d/plugins/"
+  RUN rm -rf /root/terraform-provider-buildkite-v0.0.6-linux-amd64.zip
+  ```
 
-## Local development of this provider
+## Development & Testing
 
-To do local development you will most likely be working in a Github fork of the repository. After creating your fork
-you can add it as a remote on your local repository in GOPATH:
-
-* `cd $GOPATH/src/github.com/$(git remote show origin -n | grep h.URL | sed 's/.*://;s/\/.*//;s/.git$//')/terraform-buildkite`
-* `git remote add mine git@github.com:yourname/terraform-buildkite`
-* `git checkout -b yourbranch`
-* `git push -u mine yourbranch`
-
-After this you should be able to `git push` to your fork, and eventually open a PR if you like.
-
-You can build like this:
-
-* `go install github.com/$(git remote show origin -n | grep h.URL | sed 's/.*://;s/\/.*//;s/.git$//')/terraform-buildkite/terraform-provider-buildkite`
-
-This should produce a file at `$GOPATH/bin/terraform-provider-buildkite`. To use this with Terraform you'll need to move that binary to the [third-party plugins direcory](https://www.terraform.io/docs/plugins/basics.html#installing-a-plugin) to help Terraform find this file.
-
-You can see debug output via `TF_LOG=DEBUG terraform plan`
+```
+./test.sh
+```
+- You can set `export TF_LOG=DEBUG` before executing the test script to get a better idea of what is failing.

@@ -138,10 +138,14 @@ func resourcePipeline() *schema.Resource {
 				ConflictsWith: []string{"github_settings"},
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
+						"trigger_mode": &schema.Schema{
+							Type:     schema.TypeString,
+							Optional: true,
+						},
 						"build_pull_requests": &schema.Schema{
 							Type:     schema.TypeBool,
+							Default:  false,
 							Optional: true,
-							Default:  true,
 						},
 						"pull_request_branch_filter_enabled": &schema.Schema{
 							Type:     schema.TypeBool,
@@ -152,10 +156,30 @@ func resourcePipeline() *schema.Resource {
 							Type:     schema.TypeString,
 							Optional: true,
 						},
+						"skip_builds_for_existing_commits": &schema.Schema{
+							Type:     schema.TypeBool,
+							Optional: true,
+							Default:  false,
+						},
 						"skip_pull_request_builds_for_existing_commits": &schema.Schema{
 							Type:     schema.TypeBool,
 							Optional: true,
-							Default:  true,
+							Default:  false,
+						},
+						"build_pull_request_forks": &schema.Schema{
+							Type:     schema.TypeBool,
+							Optional: true,
+							Default:  false,
+						},
+						"filter_enabled": &schema.Schema{
+							Type:     schema.TypeBool,
+							Optional: true,
+							Default:  false,
+						},
+						"prefix_pull_request_fork_branch_names": &schema.Schema{
+							Type:     schema.TypeBool,
+							Optional: true,
+							Default:  false,
 						},
 						"build_tags": &schema.Schema{
 							Type:     schema.TypeBool,
@@ -165,16 +189,31 @@ func resourcePipeline() *schema.Resource {
 						"publish_commit_status": &schema.Schema{
 							Type:     schema.TypeBool,
 							Optional: true,
-							Default:  true,
+							Default:  false,
 						},
 						"publish_commit_status_per_step": &schema.Schema{
 							Type:     schema.TypeBool,
 							Optional: true,
 							Default:  false,
 						},
+						"publish_blocked_as_pending": &schema.Schema{
+							Type:     schema.TypeBool,
+							Optional: true,
+							Default:  false,
+						},
+						"separate_pull_request_statuses": &schema.Schema{
+							Type:     schema.TypeBool,
+							Optional: true,
+							Default:  false,
+						},
+						"commit_status_error": &schema.Schema{
+							Type:     schema.TypeString,
+							Optional: true,
+						},
 						"upgraded_to_v2_hooks": &schema.Schema{
 							Type:     schema.TypeBool,
 							Optional: true,
+							Default:  false,
 						},
 					},
 				},
@@ -199,6 +238,7 @@ func resourcePipeline() *schema.Resource {
 						"pull_request_branch_filter_enabled": &schema.Schema{
 							Type:     schema.TypeBool,
 							Optional: true,
+							Default:  false,
 						},
 						"pull_request_branch_filter_configuration": &schema.Schema{
 							Type:     schema.TypeString,
@@ -212,7 +252,7 @@ func resourcePipeline() *schema.Resource {
 						"skip_pull_request_builds_for_existing_commits": &schema.Schema{
 							Type:     schema.TypeBool,
 							Optional: true,
-							Default:  true,
+							Default:  false,
 						},
 						"build_pull_request_forks": &schema.Schema{
 							Type:     schema.TypeBool,
@@ -227,28 +267,32 @@ func resourcePipeline() *schema.Resource {
 						"prefix_pull_request_fork_branch_names": &schema.Schema{
 							Type:     schema.TypeBool,
 							Optional: true,
-							Default:  true,
+							Default:  false,
 						},
 						"build_tags": &schema.Schema{
 							Type:     schema.TypeBool,
 							Optional: true,
+							Default:  false,
 						},
 						"publish_commit_status": &schema.Schema{
 							Type:     schema.TypeBool,
 							Optional: true,
-							Default:  true,
+							Default:  false,
 						},
 						"publish_commit_status_per_step": &schema.Schema{
 							Type:     schema.TypeBool,
 							Optional: true,
+							Default:  false,
 						},
 						"publish_blocked_as_pending": &schema.Schema{
 							Type:     schema.TypeBool,
 							Optional: true,
+							Default:  false,
 						},
 						"separate_pull_request_statuses": &schema.Schema{
 							Type:     schema.TypeBool,
 							Optional: true,
+							Default:  false,
 						},
 						"commit_status_error": &schema.Schema{
 							Type:     schema.TypeString,
@@ -502,39 +546,48 @@ func preparePipelineRequestPayload(d *schema.ResourceData) *Pipeline {
 		}
 	}
 
-		log.Printf("[INFO] buildkite: RepositoryProviderSettings have changed")
+	log.Printf("[INFO] buildkite: RepositoryProviderSettings have changed")
 
-		githubSettings := d.Get("github_settings").([]interface{})
-		bitbucketSettings := d.Get("bitbucket_settings").([]interface{})
-		settings := map[string]interface{}{}
+	githubSettings := d.Get("github_settings").([]interface{})
+	bitbucketSettings := d.Get("bitbucket_settings").([]interface{})
+	settings := map[string]interface{}{}
 
-		if len(githubSettings) > 0 {
-			s := githubSettings[0].(map[string]interface{})
+	if len(githubSettings) > 0 {
+		s := githubSettings[0].(map[string]interface{})
 
-			for k, vI := range s {
-				// Disable everything unless user specifies options (build_pull_requests is always true by default)
-				switch v := vI.(type) {
-				case bool:
-					settings[k] = false
-				case string:
-					settings[k] = ""
-				default:
-					fmt.Printf("Unable to determine the type of %+v's value: %+v! Ensure that the values you're passing in are acceptable by reviewing https://buildkite.com/docs/apis/rest-api/pipelines", fmt.Sprintf("github_settings.0.%s", k), v)
-				}
-				if d.HasChange(fmt.Sprintf("github_settings.0.%s", k)) {
-					settings[k] = vI
-				}
+		for k, vI := range s {
+			// Disable everything unless user specifies options (build_pull_requests is always true by default)
+			switch v := vI.(type) {
+			case bool:
+				settings[k] = false
+			case string:
+				settings[k] = ""
+			default:
+				fmt.Printf("Unable to determine the type of %+v's value: %+v! Ensure that the values you're passing in are acceptable by reviewing https://buildkite.com/docs/apis/rest-api/pipelines", fmt.Sprintf("github_settings.0.%s", k), v)
 			}
-		} else if len(bitbucketSettings) > 0 {
-			s := bitbucketSettings[0].(map[string]interface{})
-
-			for k, vI := range s {
-				if d.HasChange(fmt.Sprintf("bitbucket_settings.0.%s", k)) {
-					settings[k] = vI
-				}
+			if d.HasChange(fmt.Sprintf("github_settings.0.%s", k)) {
+				settings[k] = vI
 			}
 		}
-		req.ProviderSettings = settings
+	} else if len(bitbucketSettings) > 0 {
+		s := bitbucketSettings[0].(map[string]interface{})
+
+		for k, vI := range s {
+			// Disable everything unless user specifies options (build_pull_requests is always true by default)
+			switch v := vI.(type) {
+			case bool:
+				settings[k] = false
+			case string:
+				settings[k] = ""
+			default:
+				fmt.Printf("Unable to determine the type of %+v's value: %+v! Ensure that the values you're passing in are acceptable by reviewing https://buildkite.com/docs/apis/rest-api/pipelines", fmt.Sprintf("github_settings.0.%s", k), v)
+			}
+			if d.HasChange(fmt.Sprintf("bitbucket_settings.0.%s", k)) {
+				settings[k] = vI
+			}
+		}
+	}
+	req.ProviderSettings = settings
 
 	return req
 }
