@@ -18,8 +18,8 @@ resource "buildkite_pipeline" "eosio" {
   }
 
   env                  =  {
-    "BUILDKITE_CLEAN_CHECKOUT" = true
-    "SKIP_CONTRACT_BUILDER" = true
+    "BUILDKITE_CLEAN_CHECKOUT" = "true"
+    "SKIP_CONTRACT_BUILDER" = "true"
     "PREP_COMMANDS" = <<EOF
 if [[ "$(uname)" == "Darwin" ]]; then export BUILDKITE_FULL_BUILD_PATH=$(echo /Users/anka/build/$BUILDKITE_PROJECT_SLUG); else export BUILDKITE_FULL_BUILD_PATH=$(echo $BUILDKITE_BUILD_PATH/$BUILDKITE_AGENT_NAME/$BUILDKITE_PROJECT_SLUG); fi && mkdir -p $BUILDKITE_FULL_BUILD_PATH && cd $BUILDKITE_FULL_BUILD_PATH;
 git clone -v -- $([[ "$BUILDKITE_REPO" =~ "@" ]] && echo $BUILDKITE_REPO | awk -F: '{print "https://github.com/"\$\$2}' || echo $BUILDKITE_REPO) .;
@@ -35,8 +35,7 @@ git clean -ffxdq;
       type    = "script"
       name    = ":pipeline: Pipeline Upload"
       command = <<CMD
-        $$PREP_COMMANDS
-        ./.cicd/generate-pipeline.sh > pipeline.yml && buildkite-agent artifact upload pipeline.yml && buildkite-agent pipeline upload pipeline.yml
+        bash -c "$$PREP_COMMANDS ./.cicd/generate-pipeline.sh > pipeline.yml && buildkite-agent artifact upload pipeline.yml && buildkite-agent pipeline upload pipeline.yml"
       CMD
       agent_query_rules = [
         "queue=automation-basic-builder-fleet"
