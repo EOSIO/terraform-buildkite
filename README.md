@@ -21,9 +21,10 @@ resource "buildkite_pipeline" "eosio" {
     "BUILDKITE_CLEAN_CHECKOUT" = true
     "SKIP_CONTRACT_BUILDER" = true
     "PREP_COMMANDS" = <<EOF
-git clone -v -- \$BUILDKITE_REPO .;
-[[ \$BUILDKITE_BRANCH =~ ^pull/[0-9]+/head: ]] && git fetch -v --prune origin refs/pull/$(echo \$BUILDKITE_BRANCH | cut -d/ -f2)/head || git checkout \$BUILDKITE_BRANCH;
-git checkout \$BUILDKITE_COMMIT;
+if [[ "$(uname)" == "Darwin" ]]; then export BUILDKITE_FULL_BUILD_PATH=$(echo /Users/anka/build/$BUILDKITE_PROJECT_SLUG); else export BUILDKITE_FULL_BUILD_PATH=$(echo $BUILDKITE_BUILD_PATH/$BUILDKITE_AGENT_NAME/$BUILDKITE_PROJECT_SLUG); fi && mkdir -p $BUILDKITE_FULL_BUILD_PATH && cd $BUILDKITE_FULL_BUILD_PATH;
+git clone -v -- $([[ "$BUILDKITE_REPO" =~ "@" ]] && echo $BUILDKITE_REPO | awk -F: '{print "https://github.com/"\$\$2}' || echo $BUILDKITE_REPO) .;
+[[ $BUILDKITE_BRANCH =~ ^pull/[0-9]+/head: ]] && git fetch -v --prune origin refs/pull/$(echo $BUILDKITE_BRANCH | cut -d/ -f2)/head || git checkout $BUILDKITE_BRANCH;
+git checkout $BUILDKITE_COMMIT;
 git clean -ffxdq;
 ./.cicd/prep-submodules.sh;
     EOF
